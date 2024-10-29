@@ -1,0 +1,30 @@
+using MassTransit;
+using MassTransit.DependencyInjection;
+using MasstransitMultibus.Buses;
+
+namespace MasstransitMultibus;
+
+public class Service1 : BackgroundService
+{
+    private readonly IServiceScopeFactory _factory;
+
+    public Service1(IServiceScopeFactory factory)
+    {
+        _factory = factory;
+    }
+    
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var i = 0;
+        var scope = _factory.CreateScope();
+        var endpoint = scope.ServiceProvider.GetRequiredService<Bind<IFirstBus, IPublishEndpoint>>();
+        while (true)
+        {
+            await endpoint.Value.Publish(new Message { Value = $"{nameof(Service1)}\nMessage: {i}"}, stoppingToken);
+            i++;
+            await Task.Delay(1000, stoppingToken);
+        }
+        
+        await Task.Delay(Timeout.Infinite, stoppingToken);
+    }
+}
